@@ -1,0 +1,47 @@
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: terracosts
+      POSTGRES_USER: terracosts
+      POSTGRES_PASSWORD: ChangeMeEnProd123!
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  api:
+    build: ./apps/api
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://terracosts:ChangeMeEnProd123!@postgres:5432/terracosts
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=https://app.terracosts.com,http://localhost:3000
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app
+
+  web:
+    build: ./apps/web
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=https://api.terracosts.com
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
